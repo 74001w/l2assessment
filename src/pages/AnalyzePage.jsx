@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { categorizeMessage } from '../utils/llmHelper'
-import { calculateUrgency } from '../utils/urgencyScorer'
 import { getRecommendedAction } from '../utils/templates'
 
 function AnalyzePage() {
@@ -29,10 +28,8 @@ function AnalyzePage() {
     
     try {
       // Run categorization (LLM call)
-      const { category, reasoning } = await categorizeMessage(message)
-      
       // Calculate urgency (rule-based)
-      const urgency = calculateUrgency(message)
+      const { category, urgency, reasoning } = await categorizeMessage(message)
       
       // Get recommended action (template-based)
       const recommendedAction = getRecommendedAction(category)
@@ -64,6 +61,20 @@ function AnalyzePage() {
     setMessage('')
     setResults(null)
   }
+  const getUrgencyColor = (urgency) => {
+  switch (urgency) {
+    case "Critical":
+      return "bg-red-100 text-red-700 border-red-400";
+    case "High":
+      return "bg-orange-100 text-orange-700 border-orange-400";
+    case "Medium":
+      return "bg-yellow-100 text-yellow-800 border-yellow-400";
+    case "Low":
+      return "bg-green-100 text-green-700 border-green-400";
+    default:
+      return "bg-gray-100 text-gray-700 border-gray-300";
+  }
+};
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -128,7 +139,11 @@ function AnalyzePage() {
         {results && (
           <div className="bg-white rounded-lg shadow-md p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Analysis Results</h2>
-            
+            {results?.urgency === "Critical" && (
+  <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-800 rounded-lg font-bold">
+    🚨 CRITICAL INCIDENT DETECTED — ESCALATE IMMEDIATELY
+  </div>
+)}
             <div className="space-y-4">
               <div>
                 <div className="text-sm font-semibold text-gray-600 mb-1">Category</div>
@@ -139,11 +154,7 @@ function AnalyzePage() {
 
               <div>
                 <div className="text-sm font-semibold text-gray-600 mb-1">Urgency Level</div>
-                <div className={`inline-block px-4 py-2 rounded-lg font-semibold ${
-                  results.urgency === 'High' ? 'bg-red-200 text-red-900' :
-                  results.urgency === 'Medium' ? 'bg-yellow-200 text-yellow-900' :
-                  'bg-green-200 text-green-900'
-                }`}>
+                <div className={`inline-block px-4 py-2 rounded-lg font-semibold border ${getUrgencyColor(results.urgency)}`}>
                   {results.urgency}
                 </div>
               </div>
