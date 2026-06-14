@@ -24,33 +24,52 @@ export async function categorizeMessage(message) {
       messages: [
         {
           role: "user",
-          content: `Categorize this customer support message: ${message}`
+          content: `
+You are a customer support triage system.
+
+Return ONLY valid JSON.
+
+Classify the message into:
+
+Categories:
+- Billing Issue
+- Technical Problem
+- Feature Request
+- General Inquiry
+
+Also assign urgency:
+- Critical
+- High
+- Medium
+- Low
+
+Return format ONLY:
+
+{
+  "category": "",
+  "urgency": "",
+  "reasoning": ""
+}
+
+Message:
+${message}
+`
         }
       ],
-      temperature: 0.7,
+      temperature: 0.2,
     });
 
     const content = response.choices[0].message.content;
+    let cleaned = content
+  .replace("```json", "")
+  .replace("```", "")
+  .trim();
+
+let parsed = JSON.parse(cleaned);
+
+return parsed;
     
-    const lines = content.split('\n');
-    let category = "Unknown";
-    let reasoning = content;
-    
-    if (content.toLowerCase().includes('billing')) {
-      category = "Billing Issue";
-    } else if (content.toLowerCase().includes('technical') || content.toLowerCase().includes('bug')) {
-      category = "Technical Problem";
-    } else if (content.toLowerCase().includes('feature')) {
-      category = "Feature Request";
-    } else if (content.toLowerCase().includes('inquiry') || content.toLowerCase().includes('question')) {
-      category = "General Inquiry";
-    }
-    
-    return {
-      category,
-      reasoning: content
-    };
-  } catch (error) {
+} catch (error) {
     console.warn('Groq API failed, using mock response:', error.message);
     return getMockCategorization(message);
   }
